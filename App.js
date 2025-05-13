@@ -68,7 +68,7 @@ export default function App() {
         />
         <Stack.Screen name="Setting" component={Setting} />
       </Stack.Navigator>
-      <StatusBar style="auto" />
+      <StatusBar style="light" />
     </NavigationContainer>
   );
 }

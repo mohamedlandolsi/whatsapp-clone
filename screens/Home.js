@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { createMaterialBottomTabNavigator } from '@react-navigation/material-bottom-tabs';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { Text, View, StyleSheet, ActivityIndicator } from 'react-native';
+import { Text, View, StyleSheet, ActivityIndicator, SafeAreaView } from 'react-native';
 import ListUsers from './Home/ListUsers';
 import Setting from './Home/Setting';
 import Contacts from './Home/Contacts';
@@ -61,54 +61,80 @@ export default function Home({ route }) {
 
   if (isLoading) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#6200ee" />
-        <Text>Loading...</Text>
-      </View>
+      <SafeAreaView style={styles.safeAreaLoadingContainer}>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#ffffff" />
+          <Text style={styles.loadingText}>Loading...</Text>
+        </View>
+      </SafeAreaView>
     );
   }
 
   return (
-    <Tab.Navigator barStyle={{ backgroundColor: '#6974d6' }}>
-      <Tab.Screen 
-        name="Users" 
-        component={ListUsers} 
-        initialParams={{ currentUserId }} 
-        options={{
-          tabBarIcon: ({ color }) => (
-            <MaterialCommunityIcons name="account-group" color={color} size={24} />
-          ),
-        }}
-      />
-      <Tab.Screen
-        name="Contacts"
-        component={Contacts}
-        initialParams={{ currentUserId }}
-        options={{
-          tabBarIcon: ({ color }) => (
-            <MaterialCommunityIcons name="contacts" color={color} size={24} />
-          ),
-        }}
-      />
-      <Tab.Screen 
-        name="Settings" 
-        component={Setting} 
-        initialParams={{ currentUserId }}
-        options={{
-          tabBarIcon: ({ color }) => (
-            <MaterialCommunityIcons name="cog" color={color} size={24} />
-          ),
-        }}
-      />
-    </Tab.Navigator>
+    <SafeAreaView style={styles.safeAreaTabNavigatorContainer}>
+      <Tab.Navigator 
+        initialRouteName="Users"
+        activeColor="#ffffff"
+        inactiveColor="#bdc3c7"
+        barStyle={{ backgroundColor: '#34495e' }}
+        shifting={false}
+      >
+        <Tab.Screen 
+          name="Users" 
+          component={ListUsers} 
+          initialParams={{ currentUserId }} 
+          options={{
+            tabBarLabel: 'Chats',
+            tabBarIcon: ({ color }) => (
+              <MaterialCommunityIcons name="chat" color={color} size={26} />
+            ),
+          }}
+        />
+        <Tab.Screen
+          name="Contacts"
+          component={Contacts}
+          initialParams={{ currentUserId }}
+          options={{
+            tabBarLabel: 'Contacts',
+            tabBarIcon: ({ color }) => (
+              <MaterialCommunityIcons name="account-multiple" color={color} size={26} />
+            ),
+          }}
+        />
+        <Tab.Screen 
+          name="Settings" 
+          component={Setting} 
+          initialParams={{ currentUserId }}
+          options={{
+            tabBarLabel: 'Settings',
+            tabBarIcon: ({ color }) => (
+              <MaterialCommunityIcons name="cog" color={color} size={26} />
+            ),
+          }}
+        />
+      </Tab.Navigator>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  safeAreaLoadingContainer: {
+    flex: 1,
+    backgroundColor: '#2c3e50',
+  },
+  safeAreaTabNavigatorContainer: {
+    flex: 1,
+    backgroundColor: '#34495e',
+  },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#2c3e50',
+  },
+  loadingText: {
+    marginTop: 10,
+    fontSize: 16,
+    color: '#ecf0f1',
   }
 });

@@ -4,12 +4,12 @@ import {
   Text,
   FlatList,
   Image,
-  ImageBackground,
   StyleSheet,
   TouchableOpacity,
   Linking,
   Platform,
   ActivityIndicator,
+  SafeAreaView,
 } from "react-native";
 import { MaterialIcons, Ionicons } from '@expo/vector-icons';
 import firebase from "../../Config";
@@ -121,160 +121,167 @@ export default function ListUsers({ navigation, route }) {
   // Show loading indicator
   if (loading) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#6974d6" />
-        <Text>Loading users...</Text>
-      </View>
+      <SafeAreaView style={styles.safeAreaFull}>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#ffffff" />
+          <Text style={styles.loadingText}>Loading users...</Text>
+        </View>
+      </SafeAreaView>
     );
   }
   
   // Show no users message if empty
   if (data.length === 0) {
     return (
-      <ImageBackground
-        source={require("../../assets/walpaper.jpg")}
-        style={styles.container}
-      >
-        <View style={styles.emptyContainer}>
-          <Text style={styles.emptyText}>No other users found</Text>
+      <SafeAreaView style={styles.safeAreaFull}>
+        <View style={styles.container}> 
+          <View style={styles.emptyContainer}>
+            <MaterialIcons name="people-outline" size={60} color="#7f8c8d" />
+            <Text style={styles.emptyText}>No other users found</Text>
+          </View>
         </View>
-      </ImageBackground>
+      </SafeAreaView>
     );
   }
 
   return (
-    <ImageBackground
-      source={require("../../assets/walpaper.jpg")}
-      style={styles.container}
-    >
-      <FlatList
-        data={data}
-        keyExtractor={(item) => item.id || Math.random().toString()}
-        contentContainerStyle={styles.listContainer}
-        renderItem={({ item }) => (
-          <View style={styles.card}>
-            <View style={styles.avatarContainer}>
+    <SafeAreaView style={styles.safeAreaFull}>
+      <View style={styles.container}> 
+        <FlatList
+          data={data}
+          keyExtractor={(item) => item.id || Math.random().toString()}
+          contentContainerStyle={styles.listContentContainer}
+          renderItem={({ item }) => (
+            <View style={styles.card}>
               <TouchableOpacity onPress={() => navigation.navigate("Chat", { 
                 currentUserId, 
                 secondUserId: item.id 
               })}>
-                <Image source={require("../../assets/favicon.png")} style={styles.avatar} />
+                <Image source={require("../../assets/profile.jpg")} style={styles.avatar} />
               </TouchableOpacity>
+
+              <View style={styles.textContainer}>
+                <Text style={styles.pseudo}>{item.pseudo || 'User'}</Text>
+                <TouchableOpacity
+                  onPress={() => {
+                    if (item.numero) {
+                      const telUrl = Platform.OS === "android"
+                        ? `tel:${item.numero}`
+                        : `telprompt:${item.numero}`;
+                      Linking.openURL(telUrl);
+                    }
+                  }}
+                >
+                  <Text style={styles.numero}>{item.numero || 'No phone number'}</Text>
+                </TouchableOpacity>
+              </View>
+
+              <View style={styles.actionsContainer}> 
+                <TouchableOpacity
+                  style={styles.actionButton}
+                  onPress={() => toggleContact(item.id)}
+                >
+                  <Ionicons 
+                    name={userContacts[item.id] ? "person-remove-outline" : "person-add-outline"} 
+                    size={24} 
+                    color={userContacts[item.id] ? "#e74c3c" : "#2ecc71"} 
+                  />
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.actionButton}
+                  onPress={() => navigation.navigate("Chat", { 
+                    currentUserId,
+                    secondUserId: item.id 
+                  })}
+                >
+                  <MaterialIcons name="chat-bubble-outline" size={24} color="#3498db" />
+                </TouchableOpacity>
+              </View>
             </View>
-
-            <View style={styles.textContainer}>
-              <Text style={styles.pseudo}>{item.pseudo || 'User'}</Text>
-              <TouchableOpacity
-                onPress={() => {
-                  if (item.numero) {
-                    const telUrl = Platform.OS === "android"
-                      ? `tel:${item.numero}`
-                      : `telprompt:${item.numero}`;
-                    Linking.openURL(telUrl);
-                  }
-                }}
-              >
-                <Text style={styles.numero}>{item.numero || 'No phone number'}</Text>
-              </TouchableOpacity>
-            </View>
-
-            <TouchableOpacity
-              style={styles.contactButton}
-              onPress={() => toggleContact(item.id)}
-            >
-              <Ionicons 
-                name={userContacts[item.id] ? "person-remove" : "person-add"} 
-                size={24} 
-                color={userContacts[item.id] ? "#FF7F7F" : "#4CAF50"} 
-              />
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.messageButton}
-              onPress={() => navigation.navigate("Chat", { 
-                currentUserId,
-                secondUserId: item.id 
-              })}
-            >
-              <MaterialIcons name="chevron-right" size={30} color="#6974d6" />
-            </TouchableOpacity>
-          </View>
-        )}
-      />
-    </ImageBackground>
+          )}
+        />
+      </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  safeAreaFull: {
+    flex: 1,
+    backgroundColor: '#2c3e50',
+  },
   container: {
     flex: 1,
-    padding: 10,
-    backgroundColor: "#f5f5f5",
+    backgroundColor: "#2c3e50",
   },
-  listContainer: {
-    paddingTop: 50,
+  listContentContainer: {
+    paddingHorizontal: 10,
+    paddingTop: 10,
+    paddingBottom: 10,
   },
   card: {
     flexDirection: "row",
-    backgroundColor: "#fff",
+    backgroundColor: "#34495e",
     padding: 15,
     marginVertical: 8,
-    borderRadius: 10,
+    borderRadius: 12,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowOpacity: 0.2,
+    shadowRadius: 5,
+    elevation: 4,
     alignItems: "center",
-  },
-  avatarContainer: {
-    position: 'relative',
-    marginRight: 15,
   },
   avatar: {
     width: 50,
     height: 50,
     borderRadius: 25,
+    marginRight: 15,
   },
   textContainer: {
     flex: 1,
-    marginRight: 10,
+    justifyContent: 'center',
   },
   pseudo: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: "#333",
-    marginTop: 2,
+    fontSize: 17,
+    fontWeight: "600",
+    color: "#ecf0f1",
+    marginBottom: 3,
   },
   numero: {
-    fontSize: 16,
-    color: "#007bff",
-    marginTop: 4,
+    fontSize: 14,
+    color: "#bdc3c7",
   },
-  messageButton: {
-    padding: 8,
-    justifyContent: 'center',
+  actionsContainer: {
+    flexDirection: 'row',
     alignItems: 'center',
   },
-  contactButton: {
-    padding: 8,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 5,
+  actionButton: {
+    padding: 10,
+    marginLeft: 10,
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#2c3e50',
+  },
+  loadingText: {
+    marginTop: 10,
+    fontSize: 16,
+    color: '#ecf0f1',
   },
   emptyContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    paddingHorizontal: 20,
   },
   emptyText: {
     fontSize: 18,
-    color: '#616161',
+    color: '#bdc3c7',
+    marginTop: 15,
+    textAlign: 'center',
   },
 });

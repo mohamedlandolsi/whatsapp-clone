@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, FlatList, StyleSheet, ImageBackground, TouchableOpacity } from 'react-native';
+import { View, Text, FlatList, StyleSheet, TouchableOpacity, Image, SafeAreaView } from 'react-native';
 import firebase from '../../Config';
-import { Avatar } from 'react-native-paper';
+import { MaterialIcons } from '@expo/vector-icons';
 
 const database = firebase.database();
 
@@ -69,86 +69,100 @@ export default function Contacts({ navigation, route }) {
       style={styles.card}
       onPress={() => navigation.navigate('Chat', { currentUserId, secondUserId: item.id })}
     >
-      <Avatar.Text size={40} label={item.pseudo ? item.pseudo.charAt(0).toUpperCase() : '?'} style={styles.avatar} />
+      <Image source={require("../../assets/profile.jpg")} style={styles.avatar} />
       <View style={styles.textContainer}>
         <Text style={styles.pseudo}>{item.pseudo || 'N/A'}</Text>
-        <Text style={styles.phone}>{item.numero || 'No phone number'}</Text>
+        <Text style={styles.details}>{item.numero || 'No phone number'}</Text>
       </View>
+      <MaterialIcons name="chevron-right" size={28} color="#7f8c8d" />
     </TouchableOpacity>
   );
 
   return (
-    <ImageBackground
-      source={require('../../assets/walpaper.jpg')}
-      style={styles.container}
-    >
-      {contacts.length === 0 ? (
-        <View style={styles.emptyContainer}>
-          <Text style={styles.emptyText}>No contacts yet.</Text>
-          <Text style={styles.emptySubText}>Go to Users to add contacts.</Text>
-        </View>
-      ) : (
-        <FlatList
-          data={contacts}
-          keyExtractor={(item) => item.id}
-          renderItem={renderContact}
-          contentContainerStyle={styles.listContainer}
-        />
-      )}
-    </ImageBackground>
+    <SafeAreaView style={styles.safeAreaFull}> 
+      <View style={styles.container}>
+        {contacts.length === 0 ? (
+          <View style={styles.emptyContainer}>
+            <MaterialIcons name="person-search" size={60} color="#7f8c8d" />
+            <Text style={styles.emptyText}>No contacts yet.</Text>
+            <Text style={styles.emptySubText}>Go to Chats to add contacts.</Text>
+          </View>
+        ) : (
+          <FlatList
+            data={contacts}
+            keyExtractor={(item) => item.id}
+            renderItem={renderContact}
+            contentContainerStyle={styles.listContentContainer}
+          />
+        )}
+      </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  safeAreaFull: { // Added SafeAreaView style
+    flex: 1,
+    backgroundColor: '#2c3e50', // Match screen background
+  },
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#2c3e50',
   },
-  listContainer: {
-    padding: 10,
-    paddingTop: 20,
+  listContentContainer: {
+    paddingHorizontal: 10,
+    paddingTop: 10,
+    paddingBottom: 10,
   },
   card: {
     flexDirection: 'row',
-    backgroundColor: '#fff',
+    backgroundColor: '#34495e',
     padding: 15,
     marginVertical: 8,
-    borderRadius: 10,
+    borderRadius: 12,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
-    shadowRadius: 2,
-    elevation: 2,
+    shadowRadius: 5,
+    elevation: 4,
     alignItems: 'center',
   },
   avatar: {
+    width: 45,
+    height: 45,
+    borderRadius: 22.5,
     marginRight: 15,
   },
   textContainer: {
     flex: 1,
+    justifyContent: 'center',
   },
   pseudo: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#333',
+    fontSize: 17,
+    fontWeight: '600',
+    color: '#ecf0f1',
+    marginBottom: 3,
   },
-  phone: {
+  details: {
     fontSize: 14,
-    color: '#666',
-    marginTop: 4,
+    color: '#bdc3c7',
   },
   emptyContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    paddingHorizontal: 20,
   },
   emptyText: {
     fontSize: 18,
-    color: '#555',
+    color: '#bdc3c7',
+    marginTop: 15,
     marginBottom: 5,
+    textAlign: 'center',
   },
   emptySubText: {
     fontSize: 14,
-    color: '#777',
+    color: '#95a5a6',
+    textAlign: 'center',
   },
 });

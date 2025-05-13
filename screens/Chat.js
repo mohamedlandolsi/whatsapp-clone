@@ -9,10 +9,14 @@ import {
   Platform,
   TouchableOpacity,
   Alert,
+  Image,
+  ActivityIndicator,
+  Keyboard,
 } from "react-native";
 import React, { useState, useEffect } from "react";
 import firebase from "../Config";
-import { Button, Avatar } from "react-native-paper";
+import { MaterialIcons } from "@expo/vector-icons";
+import { EmojiKeyboard } from "rn-emoji-keyboard"; // Import EmojiKeyboard
 
 const database = firebase.database();
 const ref_database = database.ref();
@@ -29,6 +33,22 @@ export default function Chat({ route, navigation }) {
   const [msg, setMsg] = useState("");
   const [currentUserName, setCurrentUserName] = useState("");
   const [secondUserName, setSecondUserName] = useState("");
+  const [secondUserPhoto, setSecondUserPhoto] = useState(null);
+  const [loadingUserInfo, setLoadingUserInfo] = useState(true);
+  const [isEmojiKeyboardVisible, setIsEmojiKeyboardVisible] = useState(false); // State for emoji keyboard visibility
+
+  const handleEmojiToggle = () => {
+    if (!isEmojiKeyboardVisible) {
+      Keyboard.dismiss(); // Dismiss system keyboard first
+    }
+    setIsEmojiKeyboardVisible(!isEmojiKeyboardVisible);
+  };
+
+  const handleInputFocus = () => {
+    if (isEmojiKeyboardVisible) {
+      setIsEmojiKeyboardVisible(false); // Hide emoji keyboard when text input is focused
+    }
+  };
 
   // Create a unique discussion ID
   const idDesc =
@@ -59,14 +79,26 @@ export default function Chat({ route, navigation }) {
         .once("value")
         .then((snapshot) => {
           if (snapshot.exists()) {
-            setSecondUserName(snapshot.val().pseudo || "Other User");
-            // Set the title of the navigation header
+            const userData = snapshot.val();
+            setSecondUserName(userData.pseudo || "Other User");
+            setSecondUserPhoto(userData.photoURL || null);
             navigation.setOptions({
-              title: snapshot.val().pseudo || "Chat",
+              title: userData.pseudo || "Chat",
               headerShown: true,
+              headerStyle: {
+                backgroundColor: "#34495e",
+              },
+              headerTintColor: "#ffffff",
+              headerTitleStyle: {
+                fontWeight: "bold",
+              },
             });
           }
-        });
+          setLoadingUserInfo(false);
+        })
+        .catch(() => setLoadingUserInfo(false));
+    } else {
+      setLoadingUserInfo(false);
     }
 
     // Define the listener callback
@@ -96,7 +128,7 @@ export default function Chat({ route, navigation }) {
       // Detach the specific listener
       ref_undiscussion.off("value", messageListenerCallback);
     };
-  }, [currentUserId, secondUserId, navigation, ref_undiscussion]); // Added ref_undiscussion to dependencies
+  }, [currentUserId, secondUserId, navigation, ref_undiscussion]);
 
   // Send message function
   const handleSend = () => {
@@ -120,6 +152,11 @@ export default function Chat({ route, navigation }) {
       });
   };
 
+  // Handle emoji selection
+  const handleEmojiSelect = (emoji) => {
+    setMsg((prevMsg) => prevMsg + emoji.emoji);
+  };
+
   // Delete message function
   const handleDelete = (messageId) => {
     Alert.alert(
@@ -138,7 +175,6 @@ export default function Chat({ route, navigation }) {
               .remove()
               .then(() => {
                 console.log("Message deleted successfully");
-                // The message list will update automatically due to the on('value') listener
               })
               .catch((error) => {
                 console.error("Error deleting message:", error);
@@ -159,7 +195,7 @@ export default function Chat({ route, navigation }) {
     if (isCurrentUser) {
       return (
         <TouchableOpacity onLongPress={() => handleDelete(item.id)}>
-          <View style={styles.messageRow}>
+          <View style={[styles.messageRow, styles.currentUserRow]}>
             <View style={[styles.messageBubble, styles.currentUserMessage]}>
               <Text style={styles.messageText}>{item.text}</Text>
               <Text style={styles.timestampText}>
@@ -169,20 +205,20 @@ export default function Chat({ route, navigation }) {
                 })}
               </Text>
             </View>
-            {isCurrentUser && <View style={styles.spacer} />}
           </View>
         </TouchableOpacity>
       );
     } else {
-      // Original rendering for other user's messages (not deletable by current user)
       return (
-        <View style={styles.messageRow}>
-          {!isCurrentUser && (
-            <Avatar.Text
-              size={30}
-              label={secondUserName.charAt(0)}
-              style={styles.messageAvatar}
-            />
+        <View style={[styles.messageRow, styles.otherUserRow]}>
+          {secondUserPhoto ? (
+            <Image source={{ uri: secondUserPhoto }} style={styles.messageAvatar} />
+          ) : (
+            <View style={styles.avatarPlaceholder}>
+              <Text style={styles.avatarPlaceholderText}>
+                {secondUserName.charAt(0).toUpperCase()}
+              </Text>
+            </View>
           )}
           <View style={[styles.messageBubble, styles.otherUserMessage]}>
             <Text style={styles.messageText}>{item.text}</Text>
@@ -198,29 +234,69 @@ export default function Chat({ route, navigation }) {
     }
   };
 
+  if (loadingUserInfo) {
+    return (
+      <SafeAreaView style={styles.loadingScreenContainer}>
+        <ActivityIndicator size="large" color="#ffffff" />
+        <Text style={styles.loadingText}>Loading chat...</Text>
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView style={styles.container}>
       <FlatList
         data={messages}
         renderItem={renderMessage}
         keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.messageList}
+        style={styles.flatList}
+        contentContainerStyle={styles.messageListContentContainer}
       />
 
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
-        style={styles.inputContainer}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 0}
       >
-        <TextInput
-          placeholder="Type your message..."
-          value={msg}
-          onChangeText={setMsg}
-          style={styles.input}
-        />
-        <Button mode="contained" onPress={handleSend} style={styles.sendButton}>
-          Send
-        </Button>
+        <View style={styles.inputBar}>
+          <TouchableOpacity 
+            style={styles.emojiButton} 
+            onPress={handleEmojiToggle}
+          >
+            <MaterialIcons name={isEmojiKeyboardVisible ? "keyboard" : "emoji-emotions"} size={24} color="#bdc3c7" />
+          </TouchableOpacity>
+          <TextInput
+            placeholder="Type your message..."
+            value={msg}
+            onChangeText={setMsg}
+            style={styles.input}
+            placeholderTextColor="#95a5a6"
+            onFocus={handleInputFocus}
+          />
+          <TouchableOpacity
+            style={styles.sendButton}
+            onPress={handleSend}
+            disabled={msg.trim() === ""}
+          >
+            <MaterialIcons name="send" size={24} color="#ffffff" />
+          </TouchableOpacity>
+        </View>
       </KeyboardAvoidingView>
+
+      {isEmojiKeyboardVisible && (
+        <EmojiKeyboard
+          onEmojiSelected={handleEmojiSelect}
+          onRequestClose={() => setIsEmojiKeyboardVisible(false)}
+          theme={{ dark: true }}
+          styles={{
+            container: {
+              backgroundColor: '#2c3e50',
+              borderTopColor: '#34495e',
+              borderTopWidth: 1,
+            },
+          }}
+          categoryPosition="top"
+        />
+      )}
     </SafeAreaView>
   );
 }
@@ -228,95 +304,114 @@ export default function Chat({ route, navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#f5f5f5",
+    backgroundColor: "#2c3e50",
   },
-  header: {
-    flexDirection: "row",
+  flatList: {
+    flex: 1,
+  },
+  loadingScreenContainer: {
+    flex: 1,
+    backgroundColor: "#2c3e50",
+    justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#6974d6",
-    padding: 15,
-    elevation: 4,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 2,
   },
-  avatar: {
-    marginRight: 10,
-    backgroundColor: "#fff",
+  loadingText: {
+    marginTop: 10,
+    fontSize: 16,
+    color: "#ecf0f1",
   },
-  headerTitle: {
-    color: "#fff",
-    fontSize: 18,
-    fontWeight: "bold",
-  },
-  messageList: {
-    padding: 15,
-    paddingBottom: 70,
+  messageListContentContainer: {
+    paddingHorizontal: 10,
+    paddingVertical: 10,
   },
   messageRow: {
     flexDirection: "row",
+    marginVertical: 8,
     alignItems: "flex-end",
-    marginVertical: 5,
-    width: "100%",
+  },
+  currentUserRow: {
+    justifyContent: "flex-end",
+  },
+  otherUserRow: {
+    justifyContent: "flex-start",
   },
   messageAvatar: {
-    marginRight: 5,
-    backgroundColor: "#6974d6",
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    marginRight: 8,
+    backgroundColor: "#4a6572",
   },
-  spacer: {
-    width: 35, // Same width as avatar to balance the layout
+  avatarPlaceholder: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    marginRight: 8,
+    backgroundColor: "#4a6572",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  avatarPlaceholderText: {
+    color: "#ffffff",
+    fontSize: 16,
+    fontWeight: "bold",
   },
   messageBubble: {
-    maxWidth: "70%",
-    padding: 12,
-    borderRadius: 16,
+    maxWidth: "75%",
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    borderRadius: 18,
+    elevation: 1,
   },
   currentUserMessage: {
-    alignSelf: "flex-end",
-    backgroundColor: "#DCF8C6",
-    borderBottomRightRadius: 0,
-    marginLeft: "auto", // Push to the right side
+    backgroundColor: "#005d4b",
+    borderBottomRightRadius: 4,
+    marginLeft: "auto",
   },
   otherUserMessage: {
-    alignSelf: "flex-start",
-    backgroundColor: "#fff",
-    borderBottomLeftRadius: 0,
-    marginRight: "auto", // Push to the left side
+    backgroundColor: "#37474f",
+    borderBottomLeftRadius: 4,
+    marginRight: "auto",
   },
   messageText: {
     fontSize: 16,
-    color: "#333",
+    color: "#ffffff",
   },
   timestampText: {
-    fontSize: 10,
-    color: "#999",
+    fontSize: 11,
+    color: "#bdc3c7",
     alignSelf: "flex-end",
-    marginTop: 4,
+    marginTop: 5,
   },
-  inputContainer: {
-    position: "absolute",
-    bottom: 0,
-    left: 0,
-    right: 0,
+  inputBar: {
     flexDirection: "row",
-    padding: 10,
-    backgroundColor: "#fff",
-    borderTopWidth: 1,
-    borderTopColor: "#ddd",
+    paddingHorizontal: 8,
+    paddingVertical: 8,
+    backgroundColor: "#34495e",
+    alignItems: "center",
+  },
+  emojiButton: {
+    padding: 8,
+    marginRight: 4,
   },
   input: {
     flex: 1,
-    height: 40,
-    borderWidth: 1,
-    borderColor: "#ddd",
+    minHeight: 40,
+    backgroundColor: "#4a6572",
     borderRadius: 20,
     paddingHorizontal: 15,
-    backgroundColor: "#f9f9f9",
+    paddingVertical: 10,
+    fontSize: 16,
+    color: "#ffffff",
     marginRight: 10,
   },
   sendButton: {
+    backgroundColor: "#2980b9",
     borderRadius: 20,
+    width: 40,
+    height: 40,
     justifyContent: "center",
+    alignItems: "center",
+    elevation: 2,
   },
 });
