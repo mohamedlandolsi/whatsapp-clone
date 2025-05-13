@@ -13,10 +13,17 @@ import {
   ActivityIndicator,
   Keyboard,
 } from "react-native";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import firebase from "../Config";
 import { MaterialIcons } from "@expo/vector-icons";
-import { EmojiKeyboard } from "rn-emoji-keyboard"; // Import EmojiKeyboard
+import { EmojiKeyboard } from "rn-emoji-keyboard";
+import {
+  Menu,
+  MenuProvider,
+  MenuOptions,
+  MenuOption,
+  MenuTrigger,
+} from "react-native-popup-menu";
 
 const database = firebase.database();
 const ref_database = database.ref();
@@ -35,18 +42,27 @@ export default function Chat({ route, navigation }) {
   const [secondUserName, setSecondUserName] = useState("");
   const [secondUserPhoto, setSecondUserPhoto] = useState(null);
   const [loadingUserInfo, setLoadingUserInfo] = useState(true);
-  const [isEmojiKeyboardVisible, setIsEmojiKeyboardVisible] = useState(false); // State for emoji keyboard visibility
+  const [isEmojiKeyboardVisible, setIsEmojiKeyboardVisible] = useState(false);
+  const menuRef = useRef(null);
+  const [selectedMessageId, setSelectedMessageId] = useState(null);
 
   const handleEmojiToggle = () => {
     if (!isEmojiKeyboardVisible) {
-      Keyboard.dismiss(); // Dismiss system keyboard first
+      Keyboard.dismiss();
     }
     setIsEmojiKeyboardVisible(!isEmojiKeyboardVisible);
   };
 
   const handleInputFocus = () => {
     if (isEmojiKeyboardVisible) {
-      setIsEmojiKeyboardVisible(false); // Hide emoji keyboard when text input is focused
+      setIsEmojiKeyboardVisible(false);
+    }
+  };
+
+  const openMenu = (messageId) => {
+    setSelectedMessageId(messageId);
+    if (menuRef.current) {
+      menuRef.current.open();
     }
   };
 
@@ -58,7 +74,7 @@ export default function Chat({ route, navigation }) {
 
   const ref_undiscussion = ref_lesdiscussions.child(idDesc);
 
-  // Fetch user names from database
+  // Fetch usernames from database
   useEffect(() => {
     // Fetch current user info
     if (currentUserId) {
@@ -101,7 +117,6 @@ export default function Chat({ route, navigation }) {
       setLoadingUserInfo(false);
     }
 
-    // Define the listener callback
     const messageListenerCallback = (snapshot) => {
       const messageList = [];
       if (snapshot.exists()) {
@@ -111,11 +126,9 @@ export default function Chat({ route, navigation }) {
             ...childSnapshot.val(),
           });
         });
-        // Sort messages by timestamp
         messageList.sort((a, b) => a.timestamp - b.timestamp);
         setMessages(messageList);
       } else {
-        // If the discussion node doesn't exist or is empty, clear local messages.
         setMessages([]);
       }
     };
@@ -125,7 +138,6 @@ export default function Chat({ route, navigation }) {
 
     // Clean up listeners
     return () => {
-      // Detach the specific listener
       ref_undiscussion.off("value", messageListenerCallback);
     };
   }, [currentUserId, secondUserId, navigation, ref_undiscussion]);
@@ -144,7 +156,7 @@ export default function Chat({ route, navigation }) {
       .push(messageData)
       .then(() => {
         console.log("Message sent successfully");
-        setMsg(""); // Clear input after sending
+        setMsg("");
       })
       .catch((error) => {
         console.error("Error sending message:", error);
@@ -152,7 +164,6 @@ export default function Chat({ route, navigation }) {
       });
   };
 
-  // Handle emoji selection
   const handleEmojiSelect = (emoji) => {
     setMsg((prevMsg) => prevMsg + emoji.emoji);
   };
@@ -194,7 +205,7 @@ export default function Chat({ route, navigation }) {
 
     if (isCurrentUser) {
       return (
-        <TouchableOpacity onLongPress={() => handleDelete(item.id)}>
+        <TouchableOpacity onLongPress={() => openMenu(item.id)}>
           <View style={[styles.messageRow, styles.currentUserRow]}>
             <View style={[styles.messageBubble, styles.currentUserMessage]}>
               <Text style={styles.messageText}>{item.text}</Text>
@@ -244,60 +255,74 @@ export default function Chat({ route, navigation }) {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      <FlatList
-        data={messages}
-        renderItem={renderMessage}
-        keyExtractor={(item) => item.id}
-        style={styles.flatList}
-        contentContainerStyle={styles.messageListContentContainer}
-      />
-
-      <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-        keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 0}
-      >
-        <View style={styles.inputBar}>
-          <TouchableOpacity 
-            style={styles.emojiButton} 
-            onPress={handleEmojiToggle}
-          >
-            <MaterialIcons name={isEmojiKeyboardVisible ? "keyboard" : "emoji-emotions"} size={24} color="#bdc3c7" />
-          </TouchableOpacity>
-          <TextInput
-            placeholder="Type your message..."
-            value={msg}
-            onChangeText={setMsg}
-            style={styles.input}
-            placeholderTextColor="#95a5a6"
-            onFocus={handleInputFocus}
-          />
-          <TouchableOpacity
-            style={styles.sendButton}
-            onPress={handleSend}
-            disabled={msg.trim() === ""}
-          >
-            <MaterialIcons name="send" size={24} color="#ffffff" />
-          </TouchableOpacity>
-        </View>
-      </KeyboardAvoidingView>
-
-      {isEmojiKeyboardVisible && (
-        <EmojiKeyboard
-          onEmojiSelected={handleEmojiSelect}
-          onRequestClose={() => setIsEmojiKeyboardVisible(false)}
-          theme={{ dark: true }}
-          styles={{
-            container: {
-              backgroundColor: '#2c3e50',
-              borderTopColor: '#34495e',
-              borderTopWidth: 1,
-            },
-          }}
-          categoryPosition="top"
+    <MenuProvider>
+      <SafeAreaView style={styles.container}>
+        <FlatList
+          data={messages}
+          renderItem={renderMessage}
+          keyExtractor={(item) => item.id}
+          style={styles.flatList}
+          contentContainerStyle={styles.messageListContentContainer}
         />
-      )}
-    </SafeAreaView>
+        <Menu ref={menuRef} name="message-actions">
+          <MenuTrigger />
+          <MenuOptions customStyles={menuOptionsStyles}>
+            <MenuOption onSelect={() => handleDelete(selectedMessageId)}>
+              <View style={styles.menuOptionContent}>
+                <MaterialIcons name="delete-outline" size={20} color="#e74c3c" />
+                <Text style={[styles.menuOptionText, { color: "#e74c3c" }]}>Delete</Text>
+              </View>
+            </MenuOption>
+          </MenuOptions>
+        </Menu>
+
+        <KeyboardAvoidingView
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 0}
+        >
+          <View style={styles.inputBar}>
+            <TouchableOpacity style={styles.emojiButton} onPress={handleEmojiToggle}>
+              <MaterialIcons
+                name={isEmojiKeyboardVisible ? "keyboard" : "emoji-emotions"}
+                size={24}
+                color="#bdc3c7"
+              />
+            </TouchableOpacity>
+            <TextInput
+              placeholder="Type your message..."
+              value={msg}
+              onChangeText={setMsg}
+              style={styles.input}
+              placeholderTextColor="#95a5a6"
+              onFocus={handleInputFocus}
+            />
+            <TouchableOpacity
+              style={styles.sendButton}
+              onPress={handleSend}
+              disabled={msg.trim() === ""}
+            >
+              <MaterialIcons name="send" size={24} color="#ffffff" />
+            </TouchableOpacity>
+          </View>
+        </KeyboardAvoidingView>
+
+        {isEmojiKeyboardVisible && (
+          <EmojiKeyboard
+            onEmojiSelected={handleEmojiSelect}
+            onRequestClose={() => setIsEmojiKeyboardVisible(false)}
+            theme={{ dark: true }}
+            styles={{
+              container: {
+                backgroundColor: "#2c3e50",
+                borderTopColor: "#34495e",
+                borderTopWidth: 1,
+              },
+            }}
+            categoryPosition="top"
+          />
+        )}
+      </SafeAreaView>
+    </MenuProvider>
   );
 }
 
@@ -414,4 +439,30 @@ const styles = StyleSheet.create({
     alignItems: "center",
     elevation: 2,
   },
+  messageBubbleWrapper: {
+    // To ensure the bubble itself is the trigger area
+  },
+  menuOptionContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+  },
+  menuOptionText: {
+    marginLeft: 10,
+    fontSize: 16,
+  },
 });
+
+const menuOptionsStyles = {
+  optionsContainer: {
+    backgroundColor: "#34495e",
+    borderRadius: 8,
+    paddingVertical: 5,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+};

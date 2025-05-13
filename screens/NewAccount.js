@@ -9,7 +9,7 @@ import {
   Alert,
   KeyboardAvoidingView,
   Platform,
-  SafeAreaView, // Added SafeAreaView
+  SafeAreaView,
 } from "react-native";
 import firebase from "../Config";
 import { LinearGradient } from 'expo-linear-gradient';
@@ -26,7 +26,7 @@ export default function NewAccount({ navigation }) {
     <SafeAreaView style={styles.safeArea}>
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
-        style={styles.keyboardAvoidingContainer} // Changed from styles.container
+        style={styles.keyboardAvoidingContainer}
       >
         <LinearGradient
           colors={['#4c669f', '#3b5998', '#192f6a']}
@@ -119,11 +119,11 @@ export default function NewAccount({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  safeArea: { // Added for SafeAreaView
+  safeArea: {
     flex: 1,
-    backgroundColor: '#192f6a', // Darkest color of the gradient
+    backgroundColor: '#192f6a',
   },
-  keyboardAvoidingContainer: { // Added for KeyboardAvoidingView
+  keyboardAvoidingContainer: {
     flex: 1,
   },
   background: {

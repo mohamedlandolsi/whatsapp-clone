@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { View, Text, FlatList, StyleSheet, TouchableOpacity, Image, SafeAreaView } from 'react-native';
 import firebase from '../../Config';
 import { MaterialIcons } from '@expo/vector-icons';
@@ -46,7 +46,7 @@ export default function Contacts({ navigation, route }) {
           setContacts(detailedContacts);
         } catch (error) {
           console.error("[Contacts.js] Error fetching user details for contacts:", error);
-          setContacts([]); // Set to empty on error to avoid partial/stale data
+          setContacts([]);
         }
       } else {
         console.log("[Contacts.js] contactsData is null or undefined, setting contacts to empty array.");
@@ -101,9 +101,9 @@ export default function Contacts({ navigation, route }) {
 }
 
 const styles = StyleSheet.create({
-  safeAreaFull: { // Added SafeAreaView style
+  safeAreaFull: {
     flex: 1,
-    backgroundColor: '#2c3e50', // Match screen background
+    backgroundColor: '#2c3e50',
   },
   container: {
     flex: 1,

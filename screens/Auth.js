@@ -9,7 +9,7 @@ import {
   Alert,
   KeyboardAvoidingView,
   Platform,
-  SafeAreaView, // Added SafeAreaView
+  SafeAreaView,
 } from "react-native";
 import { useState } from "react";
 import firebase from "../Config";
@@ -118,11 +118,11 @@ export default function Auth({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  safeArea: { // Renamed from container and added backgroundColor
+  safeArea: {
     flex: 1,
-    backgroundColor: '#192f6a', // Darkest color of the gradient
+    backgroundColor: '#192f6a',
   },
-  keyboardAvoidingContainer: { // Added for KeyboardAvoidingView
+  keyboardAvoidingContainer: {
     flex: 1,
   },
   background: {

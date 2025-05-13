@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -46,7 +46,7 @@ export default function ListUsers({ navigation, route }) {
       console.error("[ListUsers.js] Error fetching contacts:", error);
     });
 
-    // Set up listener for users, explicitly filtering out the current user
+    // Set up listener for users
     const usersListener = ref_listcomptes.on("value", (snapshot) => {
       console.log("[ListUsers.js] Users snapshot received, filtering with currentUserId:", currentUserId);
       

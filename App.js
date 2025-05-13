@@ -1,17 +1,16 @@
-import React, { useEffect } from 'react';
+import { useEffect } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { StatusBar } from 'expo-status-bar';
 import { LogBox } from 'react-native';
+import { MenuProvider } from 'react-native-popup-menu';
 
-// Import screens
 import Auth from './screens/Auth';
 import NewAccount from './screens/NewAccount';
 import Home from './screens/Home';
 import Chat from './screens/Chat';
 import Setting from './screens/Home/Setting';
 
-// Import Firebase config
 import firebase from './Config';
 
 // Ignore specific Firebase warnings
@@ -47,28 +46,30 @@ export default function App() {
   }, []);
 
   return (
-    <NavigationContainer>
-      <Stack.Navigator screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="Auth" component={Auth} />
-        <Stack.Screen 
-          name="NewAccount" 
-          component={NewAccount} 
-          options={{
-            headerShown: true,
-            headerTitle: "Back to Auth"
-          }}
-        />
-        <Stack.Screen name="Home" component={Home} />
-        <Stack.Screen 
-          name="Chat" 
-          component={Chat}
-          options={{
-            headerShown: false // We manage this in the component itself
-          }}
-        />
-        <Stack.Screen name="Setting" component={Setting} />
-      </Stack.Navigator>
-      <StatusBar style="light" />
-    </NavigationContainer>
+    <MenuProvider>
+      <NavigationContainer>
+        <Stack.Navigator screenOptions={{ headerShown: false }}>
+          <Stack.Screen name="Auth" component={Auth} />
+          <Stack.Screen 
+            name="NewAccount" 
+            component={NewAccount} 
+            options={{
+              headerShown: true,
+              headerTitle: "Back to Auth"
+            }}
+          />
+          <Stack.Screen name="Home" component={Home} />
+          <Stack.Screen 
+            name="Chat" 
+            component={Chat}
+            options={{
+              headerShown: false
+            }}
+          />
+          <Stack.Screen name="Setting" component={Setting} />
+        </Stack.Navigator>
+        <StatusBar style="light" />
+      </NavigationContainer>
+    </MenuProvider>
   );
 }

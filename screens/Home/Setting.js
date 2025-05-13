@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { 
   View, 
   StyleSheet, 
@@ -109,9 +109,9 @@ export default function Setting({ navigation, route }) {
 }
 
 const styles = StyleSheet.create({
-  safeAreaFull: { // Added SafeAreaView style
+  safeAreaFull: { 
     flex: 1,
-    backgroundColor: '#2c3e50', // Match screen background
+    backgroundColor: '#2c3e50',
   },
   container: {
     flex: 1,

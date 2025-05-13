@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { createMaterialBottomTabNavigator } from '@react-navigation/material-bottom-tabs';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Text, View, StyleSheet, ActivityIndicator, SafeAreaView } from 'react-native';
@@ -28,7 +28,7 @@ export default function Home({ route }) {
     const syncCurrentUserToListComptes = async () => {
       console.log("[Home.js] Starting sync of current user with ListComptes");
       try {
-        // First, get all existing entries in ListComptes
+        // Get all existing entries in ListComptes
         const listComptesSnapshot = await ref_listcomptes.once('value');
         const existingEntries = listComptesSnapshot.val() || {};
         console.log("[Home.js] Existing entries in ListComptes:", Object.keys(existingEntries));
