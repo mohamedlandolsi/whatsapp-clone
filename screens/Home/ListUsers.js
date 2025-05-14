@@ -10,6 +10,8 @@ import {
   Platform,
   ActivityIndicator,
   SafeAreaView,
+  TextInput, // Add TextInput
+  StatusBar as RNStatusBar, // Import StatusBar
 } from "react-native";
 import { MaterialIcons, Ionicons } from '@expo/vector-icons';
 import firebase from "../../Config";
@@ -26,6 +28,7 @@ export default function ListUsers({ navigation, route }) {
   const [data, setData] = useState([]);
   const [userContacts, setUserContacts] = useState({});
   const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState(''); // Add state for search query
 
   // Update user's contacts and fetch all users
   useEffect(() => {
@@ -91,6 +94,12 @@ export default function ListUsers({ navigation, route }) {
     };
   }, [currentUserId]);
 
+  // Filtered data based on search query
+  const filteredData = data.filter(user => 
+    user.pseudo?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    user.email?.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   // Function to add or remove a user from contacts
   const toggleContact = (contactId) => {
     console.log("[ListUsers.js] toggleContact called with contactId:", contactId); 
@@ -130,14 +139,21 @@ export default function ListUsers({ navigation, route }) {
     );
   }
   
-  // Show no users message if empty
-  if (data.length === 0) {
+  // Show no users message if empty after filtering or initially
+  if (!loading && filteredData.length === 0) {
     return (
       <SafeAreaView style={styles.safeAreaFull}>
-        <View style={styles.container}> 
+        <View style={styles.container}>
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Search users..."
+            placeholderTextColor="#7f8c8d"
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+          />
           <View style={styles.emptyContainer}>
             <MaterialIcons name="people-outline" size={60} color="#7f8c8d" />
-            <Text style={styles.emptyText}>No other users found</Text>
+            <Text style={styles.emptyText}>{searchQuery ? 'No users match your search' : 'No other users found'}</Text>
           </View>
         </View>
       </SafeAreaView>
@@ -147,8 +163,15 @@ export default function ListUsers({ navigation, route }) {
   return (
     <SafeAreaView style={styles.safeAreaFull}>
       <View style={styles.container}> 
+        <TextInput
+          style={styles.searchInput}
+          placeholder="Search users..."
+          placeholderTextColor="#7f8c8d"
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+        />
         <FlatList
-          data={data}
+          data={filteredData} // Use filteredData
           keyExtractor={(item) => item.id || Math.random().toString()}
           contentContainerStyle={styles.listContentContainer}
           renderItem={({ item }) => (
@@ -213,7 +236,9 @@ const styles = StyleSheet.create({
   },
   container: {
     flex: 1,
-    backgroundColor: "#2c3e50",
+    backgroundColor: '#2c3e50',
+    paddingHorizontal: 10, // Add some padding
+    paddingTop: Platform.OS === 'android' ? RNStatusBar.currentHeight : 0, // Add paddingTop for Android status bar
   },
   listContentContainer: {
     paddingHorizontal: 10,
@@ -283,5 +308,17 @@ const styles = StyleSheet.create({
     color: '#bdc3c7',
     marginTop: 15,
     textAlign: 'center',
+  },
+  searchInput: {
+    height: 50,
+    backgroundColor: '#34495e',
+    borderRadius: 10,
+    paddingHorizontal: 15,
+    fontSize: 16,
+    color: '#ecf0f1',
+    marginBottom: 15,
+    marginTop: 10,
+    borderWidth: 1,
+    borderColor: '#4a6572'
   },
 });

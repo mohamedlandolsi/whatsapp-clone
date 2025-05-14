@@ -1,13 +1,14 @@
 import { useState, useEffect } from 'react';
-import { View, Text, FlatList, StyleSheet, TouchableOpacity, Image, SafeAreaView } from 'react-native';
+import { View, Text, FlatList, StyleSheet, TouchableOpacity, Image, SafeAreaView, TextInput, Platform, StatusBar as RNStatusBar } from 'react-native';
 import firebase from '../../Config';
-import { MaterialIcons } from '@expo/vector-icons';
+import { MaterialIcons, Ionicons } from '@expo/vector-icons'; // Import Ionicons
 
 const database = firebase.database();
 
 export default function Contacts({ navigation, route }) {
   const currentUserId = route.params?.currentUserId;
   const [contacts, setContacts] = useState([]);
+  const [searchQuery, setSearchQuery] = useState('');
   console.log("[Contacts.js] currentUserId:", currentUserId);
 
   useEffect(() => {
@@ -60,36 +61,78 @@ export default function Contacts({ navigation, route }) {
     };
   }, [currentUserId]);
 
+  // Filtered contacts based on search query
+  const filteredContacts = contacts.filter(contact =>
+    contact.pseudo?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    contact.email?.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   useEffect(() => {
     console.log("[Contacts.js] Contacts state updated:", contacts);
   }, [contacts]);
 
+  const removeContact = (contactId) => {
+    if (!currentUserId || !contactId) {
+      console.error("[Contacts.js] removeContact: Missing currentUserId or contactId");
+      return;
+    }
+    console.log(`[Contacts.js] Attempting to remove contact: ${contactId} for user: ${currentUserId}`);
+    database.ref(`Contacts/${currentUserId}/${contactId}`).remove()
+      .then(() => {
+        console.log(`[Contacts.js] Contact removed successfully from Firebase: ${contactId}`);
+        // The listener on contactsRef should automatically update the list
+      })
+      .catch(error => {
+        console.error(`[Contacts.js] Error removing contact ${contactId} from Firebase:`, error);
+      });
+  };
+
   const renderContact = ({ item }) => (
-    <TouchableOpacity 
-      style={styles.card}
-      onPress={() => navigation.navigate('Chat', { currentUserId, secondUserId: item.id })}
-    >
-      <Image source={require("../../assets/profile.jpg")} style={styles.avatar} />
-      <View style={styles.textContainer}>
-        <Text style={styles.pseudo}>{item.pseudo || 'N/A'}</Text>
-        <Text style={styles.details}>{item.numero || 'No phone number'}</Text>
+    <View style={styles.card}>
+      <TouchableOpacity 
+        style={styles.cardClickableArea}
+        onPress={() => navigation.navigate('Chat', { currentUserId, secondUserId: item.id })}
+      >
+        <Image source={require("../../assets/profile.jpg")} style={styles.avatar} />
+        <View style={styles.textContainer}>
+          <Text style={styles.pseudo}>{item.pseudo || 'N/A'}</Text>
+          <Text style={styles.details}>{item.numero || 'No phone number'}</Text>
+        </View>
+      </TouchableOpacity>
+      <View style={styles.actionsContainer}>
+        <TouchableOpacity
+          style={styles.actionButton}
+          onPress={() => removeContact(item.id)}
+        >
+          <Ionicons
+            name={"person-remove-outline"}
+            size={24}
+            color={"#e74c3c"}
+          />
+        </TouchableOpacity>
       </View>
-      <MaterialIcons name="chevron-right" size={28} color="#7f8c8d" />
-    </TouchableOpacity>
+    </View>
   );
 
   return (
     <SafeAreaView style={styles.safeAreaFull}> 
       <View style={styles.container}>
-        {contacts.length === 0 ? (
+        <TextInput
+          style={styles.searchInput}
+          placeholder="Search contacts..."
+          placeholderTextColor="#7f8c8d"
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+        />
+        {filteredContacts.length === 0 ? (
           <View style={styles.emptyContainer}>
-            <MaterialIcons name="person-search" size={60} color="#7f8c8d" />
-            <Text style={styles.emptyText}>No contacts yet.</Text>
-            <Text style={styles.emptySubText}>Go to Chats to add contacts.</Text>
+            <MaterialIcons name={searchQuery ? "search-off" : "person-search"} size={60} color="#7f8c8d" />
+            <Text style={styles.emptyText}>{searchQuery ? 'No contacts match your search' : 'No contacts yet.'}</Text>
+            {!searchQuery && <Text style={styles.emptySubText}>Go to Chats to add contacts.</Text>}
           </View>
         ) : (
           <FlatList
-            data={contacts}
+            data={filteredContacts}
             keyExtractor={(item) => item.id}
             renderItem={renderContact}
             contentContainerStyle={styles.listContentContainer}
@@ -108,6 +151,19 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#2c3e50',
+    paddingHorizontal: 10,
+    paddingTop: Platform.OS === 'android' ? RNStatusBar.currentHeight : 0,
+  },
+  searchInput: {
+    height: 50,
+    backgroundColor: '#34495e',
+    borderRadius: 10,
+    paddingHorizontal: 15,
+    fontSize: 16,
+    color: '#ecf0f1',
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: '#4a6572'
   },
   listContentContainer: {
     paddingHorizontal: 10,
@@ -126,6 +182,11 @@ const styles = StyleSheet.create({
     shadowRadius: 5,
     elevation: 4,
     alignItems: 'center',
+  },
+  cardClickableArea: { // Added to make most of the card clickable for chat
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
   },
   avatar: {
     width: 45,
@@ -146,6 +207,14 @@ const styles = StyleSheet.create({
   details: {
     fontSize: 14,
     color: '#bdc3c7',
+  },
+  actionsContainer: { // Added from ListUsers
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  actionButton: { // Added from ListUsers
+    padding: 10,
+    marginLeft: 10, // Space between chat icon (implicitly) and remove icon
   },
   emptyContainer: {
     flex: 1,
